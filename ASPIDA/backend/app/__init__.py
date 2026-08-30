@@ -31,6 +31,25 @@ def create_app(config_class=Config):
             "message": "ASPIDA backend is running"
         }), 200
 
+    @app.before_request
+    def ensure_tables_exist():
+        if not getattr(app, '_db_tables_ready', False):
+            try:
+                db.create_all()
+                from app.models import User
+                if not User.query.filter_by(email='admin@aspida.com').first():
+                    admin = User(name='ASPIDA Admin', email='admin@aspida.com', role='admin', is_active=True)
+                    admin.set_password('admin123')
+                    manager = User(name='Returns Manager', email='manager@aspida.com', role='manager', is_active=True)
+                    manager.set_password('manager123')
+                    analyst = User(name='Data Analyst', email='analyst@aspida.com', role='analyst', is_active=True)
+                    analyst.set_password('analyst123')
+                    db.session.add_all([admin, manager, analyst])
+                    db.session.commit()
+                app._db_tables_ready = True
+            except Exception as e:
+                print(f"[DB INIT NOTE]: {e}")
+
     # Ensure directories exist safely
     try:
         os.makedirs(os.path.join(app.config['BASE_DIR'] if hasattr(app.config, 'BASE_DIR') else os.path.dirname(app.root_path), 'instance'), exist_ok=True)
