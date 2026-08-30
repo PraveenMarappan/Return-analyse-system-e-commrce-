@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "build": "cd ASPIDA/frontend && npm install && npm run build",
+    "build": "node build.js",
     "dev": "cd ASPIDA/frontend && npm run dev",
     "preview": "cd ASPIDA/frontend && npm run preview"
   }
