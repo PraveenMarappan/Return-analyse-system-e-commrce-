@@ -14,7 +14,8 @@ import {
   LogOut,
   ChevronLeft,
   ChevronRight,
-  Shield
+  Shield,
+  Settings as SettingsIcon
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -31,16 +32,17 @@ const Sidebar = ({ collapsed, setCollapsed, user }) => {
 
   const navItems = [
     { label: 'Dashboard', path: '/dashboard', icon: LayoutDashboard, roles: ['admin', 'manager', 'analyst'] },
-    { label: 'Analyze Return', path: '/analyze', icon: Sparkles, roles: ['admin', 'manager', 'analyst'] },
+    { label: 'Analyze Return', path: '/returns/analyze', icon: Sparkles, roles: ['admin', 'manager', 'analyst'] },
     { label: 'Returns', path: '/returns', icon: RotateCcw, roles: ['admin', 'manager', 'analyst'] },
     { label: 'Products', path: '/products', icon: Package, roles: ['admin', 'manager', 'analyst'] },
-    { label: 'AI Insights', path: '/insights', icon: Sparkles, roles: ['admin', 'manager', 'analyst'] },
+    { label: 'AI Insights', path: '/ai-insights', icon: Sparkles, roles: ['admin', 'manager', 'analyst'] },
     { label: 'Risk Monitor', path: '/risk-monitor', icon: ShieldAlert, roles: ['admin', 'manager', 'analyst'] },
     { label: 'Recommendations', path: '/recommendations', icon: Lightbulb, roles: ['admin', 'manager', 'analyst'] },
     { label: 'What-If Simulator', path: '/simulator', icon: Calculator, roles: ['admin', 'manager'] },
     { label: 'Reports', path: '/reports', icon: FileText, roles: ['admin', 'manager', 'analyst'] },
     { label: 'Alerts', path: '/alerts', icon: Bell, roles: ['admin', 'manager', 'analyst'] },
-    { label: 'Users', path: '/admin/users', icon: Users, roles: ['admin'] }
+    { label: 'Settings', path: '/settings', icon: SettingsIcon, roles: ['admin', 'manager', 'analyst'] },
+    { label: 'Users', path: '/users', icon: Users, roles: ['admin'] }
   ];
 
   return (
