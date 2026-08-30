@@ -49,6 +49,7 @@ def create_app(config_class=Config):
     from app.routes.admin import admin_bp
 
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
+    app.register_blueprint(auth_bp, name='auth_alt', url_prefix='/auth')
     app.register_blueprint(dashboard_bp, url_prefix='/api/dashboard')
     app.register_blueprint(returns_bp, url_prefix='/api/returns')
     app.register_blueprint(products_bp, url_prefix='/api/products')
