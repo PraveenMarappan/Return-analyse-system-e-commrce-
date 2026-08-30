@@ -38,9 +38,9 @@ def create_app(config_class=Config):
     @app.route('/api/health', methods=['GET'])
     def health_check():
         return jsonify({
+            "success": True,
             "status": "ok",
-            "service": "ASPIDA API",
-            "db_uri": str(app.config['SQLALCHEMY_DATABASE_URI']).split('@')[-1]
+            "service": "ASPIDA API"
         }), 200
 
     # Guarantee database schema creation and demo users on app setup
@@ -115,14 +115,11 @@ def create_app(config_class=Config):
 
     @app.errorhandler(Exception)
     def handle_exception(error):
-        tb_str = traceback.format_exc()
         print("[UNHANDLED EXCEPTION]", str(error))
-        print(tb_str)
+        traceback.print_exc()
         return jsonify({
             "success": False,
-            "error": type(error).__name__,
-            "message": str(error),
-            "traceback": tb_str
+            "message": "An internal server error occurred."
         }), 500
 
     return app

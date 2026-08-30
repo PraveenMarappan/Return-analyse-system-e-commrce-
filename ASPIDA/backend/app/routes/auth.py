@@ -100,14 +100,11 @@ def login():
             }
         }), 200
     except Exception as err:
-        tb_str = traceback.format_exc()
         print("[AUTH ERROR]", str(err))
-        print(tb_str)
+        traceback.print_exc()
         return jsonify({
             "success": False,
-            "error": type(err).__name__,
-            "message": str(err),
-            "traceback": tb_str
+            "message": "Login service is temporarily unavailable."
         }), 500
 
 @auth_bp.route('/register', methods=['POST'])
