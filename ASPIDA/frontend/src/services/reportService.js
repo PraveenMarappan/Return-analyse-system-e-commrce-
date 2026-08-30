@@ -10,6 +10,7 @@ export const reportService = {
   },
 
   getDownloadUrl: (filename) => {
-    return `/api/reports/download/${filename}`;
+    const base = import.meta.env.VITE_API_URL || '/api';
+    return `${base}/reports/download/${filename}`;
   }
 };
