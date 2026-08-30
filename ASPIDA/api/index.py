@@ -1,25 +1,27 @@
 import sys
 import os
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'backend'))
+backend_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'backend')
+if backend_path not in sys.path:
+    sys.path.insert(0, backend_path)
 
-try:
-    from app import create_app, db
-    app = create_app()
+from app import create_app, db
+from app.models import User
 
-    with app.app_context():
+app = create_app()
+
+with app.app_context():
+    try:
         db.create_all()
-        try:
-            from seed_database import seed
-            seed()
-        except Exception as seed_err:
-            print(f"[VERCEL API] Seed status: {seed_err}")
-except Exception as err:
-    print(f"[VERCEL API] Initialization error: {err}")
-    from flask import Flask, jsonify
-    app = Flask(__name__)
-    @app.route('/api/<path:path>', methods=['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'])
-    def fallback(path):
-        return jsonify({"success": False, "message": f"Server initialization error: {str(err)}"}), 500
-
-handler = app
+        if not User.query.filter_by(email='admin@aspida.com').first():
+            admin = User(name='ASPIDA Admin', email='admin@aspida.com', role='admin', is_active=True)
+            admin.set_password('admin123')
+            manager = User(name='Returns Manager', email='manager@aspida.com', role='manager', is_active=True)
+            manager.set_password('manager123')
+            analyst = User(name='Data Analyst', email='analyst@aspida.com', role='analyst', is_active=True)
+            analyst.set_password('analyst123')
+            db.session.add_all([admin, manager, analyst])
+            db.session.commit()
+            print("[VERCEL API] Initialized demo accounts.")
+    except Exception as e:
+        print(f"[VERCEL API] User init status: {e}")
