@@ -1,4 +1,5 @@
 import os
+import traceback
 from flask import Flask, send_from_directory, jsonify
 from app.config import Config
 from app.extensions import db, cors, jwt
@@ -19,6 +20,16 @@ def create_app(config_class=Config):
                 "http://127.0.0.1:3000",
                 "*"
             ]
+        },
+        r"/auth/*": {
+            "origins": [
+                "https://aspidareturnanalysesystem.vercel.app",
+                "http://localhost:5173",
+                "http://127.0.0.1:5173",
+                "http://localhost:3000",
+                "http://127.0.0.1:3000",
+                "*"
+            ]
         }
     })
     jwt.init_app(app)
@@ -27,28 +38,31 @@ def create_app(config_class=Config):
     @app.route('/api/health', methods=['GET'])
     def health_check():
         return jsonify({
-            "success": True,
-            "message": "ASPIDA backend is running"
+            "status": "ok",
+            "service": "ASPIDA API",
+            "db_uri": str(app.config['SQLALCHEMY_DATABASE_URI']).split('@')[-1]
         }), 200
 
-    @app.before_request
-    def ensure_tables_exist():
-        if not getattr(app, '_db_tables_ready', False):
-            try:
-                db.create_all()
-                from app.models import User
-                if not User.query.filter_by(email='admin@aspida.com').first():
-                    admin = User(name='ASPIDA Admin', email='admin@aspida.com', role='admin', is_active=True)
-                    admin.set_password('admin123')
-                    manager = User(name='Returns Manager', email='manager@aspida.com', role='manager', is_active=True)
-                    manager.set_password('manager123')
-                    analyst = User(name='Data Analyst', email='analyst@aspida.com', role='analyst', is_active=True)
-                    analyst.set_password('analyst123')
-                    db.session.add_all([admin, manager, analyst])
-                    db.session.commit()
-                app._db_tables_ready = True
-            except Exception as e:
-                print(f"[DB INIT NOTE]: {e}")
+    # Guarantee database schema creation and demo users on app setup
+    with app.app_context():
+        try:
+            db.create_all()
+            from app.models import User
+            admin = User.query.filter_by(email='admin@aspida.com').first()
+            if not admin:
+                print("[INIT] Creating demo accounts in database...")
+                admin = User(name='ASPIDA Admin', email='admin@aspida.com', role='admin', is_active=True)
+                admin.set_password('admin123')
+                manager = User(name='Returns Manager', email='manager@aspida.com', role='manager', is_active=True)
+                manager.set_password('manager123')
+                analyst = User(name='Data Analyst', email='analyst@aspida.com', role='analyst', is_active=True)
+                analyst.set_password('analyst123')
+                db.session.add_all([admin, manager, analyst])
+                db.session.commit()
+                print("[INIT] Created demo accounts successfully.")
+        except Exception as init_err:
+            print(f"[INIT ERROR] Failed database init: {init_err}")
+            traceback.print_exc()
 
     # Ensure directories exist safely
     try:
@@ -99,8 +113,16 @@ def create_app(config_class=Config):
     def not_found(error):
         return jsonify({"success": False, "message": "Resource not found."}), 404
 
-    @app.errorhandler(500)
-    def internal_error(error):
-        return jsonify({"success": False, "message": "Internal server error."}), 500
+    @app.errorhandler(Exception)
+    def handle_exception(error):
+        tb_str = traceback.format_exc()
+        print("[UNHANDLED EXCEPTION]", str(error))
+        print(tb_str)
+        return jsonify({
+            "success": False,
+            "error": type(error).__name__,
+            "message": str(error),
+            "traceback": tb_str
+        }), 500
 
     return app

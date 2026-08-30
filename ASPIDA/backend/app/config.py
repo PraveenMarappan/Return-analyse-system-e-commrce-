@@ -11,10 +11,14 @@ class Config:
     SECRET_KEY = os.environ.get('SECRET_KEY', 'aspida-secret-key-change-in-production')
     
     default_db_path = os.path.join(WRITABLE_DIR, 'aspida.db') if IS_VERCEL else os.path.join(BASE_DIR, 'instance', 'aspida.db')
-    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL', f'sqlite:///{default_db_path}')
+    db_url = os.environ.get('DATABASE_URL')
+    if db_url and db_url.startswith('postgres://'):
+        db_url = db_url.replace('postgres://', 'postgresql://', 1)
+    
+    SQLALCHEMY_DATABASE_URI = db_url if db_url else f'sqlite:///{default_db_path}'
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     
-    JWT_SECRET_KEY = os.environ.get('JWT_SECRET_KEY', 'aspida-jwt-secret-key-super-secure')
+    JWT_SECRET_KEY = os.environ.get('JWT_SECRET_KEY', os.environ.get('SECRET_KEY', 'aspida-jwt-secret-key-super-secure'))
     JWT_ACCESS_TOKEN_EXPIRES = timedelta(hours=24)
     
     UPLOAD_FOLDER = os.path.join(WRITABLE_DIR, 'uploads')

@@ -18,7 +18,6 @@ def ensure_db_ready():
             print("[DB DIAG] Table 'users' missing. Running db.create_all()...")
             db.create_all()
             existing_tables = inspect(db.engine).get_table_names()
-            print(f"[DB DIAG] Post create_all tables: {existing_tables}")
 
         admin_user = User.query.filter_by(email='admin@aspida.com').first()
         if not admin_user:
@@ -31,7 +30,6 @@ def ensure_db_ready():
             analyst.set_password('analyst123')
             db.session.add_all([admin, manager, analyst])
             db.session.commit()
-            print("[DB DIAG] Demo users created successfully.")
             admin_user = User.query.filter_by(email='admin@aspida.com').first()
 
         print(f"[DB DIAG] USER TABLE EXISTS: {'YES' if 'users' in existing_tables else 'NO'}")
@@ -49,8 +47,8 @@ def ensure_db_ready():
 @auth_bp.route('/health', methods=['GET'])
 def health_check_auth():
     return jsonify({
-        "success": True,
-        "message": "ASPIDA backend is running"
+        "status": "ok",
+        "service": "ASPIDA Authentication API"
     }), 200
 
 @auth_bp.route('/login', methods=['POST'])
@@ -102,64 +100,54 @@ def login():
             }
         }), 200
     except Exception as err:
+        tb_str = traceback.format_exc()
         print("[AUTH ERROR]", str(err))
-        traceback.print_exc()
+        print(tb_str)
         return jsonify({
             "success": False,
-            "message": f"Login server error [{type(err).__name__}]: {str(err)}"
+            "error": type(err).__name__,
+            "message": str(err),
+            "traceback": tb_str
         }), 500
-
 
 @auth_bp.route('/register', methods=['POST'])
 def register():
     data = request.get_json() or {}
-    name = data.get('name', '').strip()
     email = data.get('email', '').strip().lower()
+    name = data.get('name', '').strip()
     password = data.get('password', '')
-    role = data.get('role', 'analyst').lower()
+    role = data.get('role', 'analyst').strip().lower()
 
-    if not name or not email or not password:
+    if not email or not password or not name:
         return jsonify({"success": False, "message": "Name, email, and password are required."}), 400
 
-    if role not in ['admin', 'manager', 'analyst']:
-        role = 'analyst'
-
     if User.query.filter_by(email=email).first():
-        return jsonify({"success": False, "message": "Email address already registered."}), 400
+        return jsonify({"success": False, "message": "User with this email already exists."}), 400
 
-    user = User(name=name, email=email, role=role, is_active=True)
-    user.set_password(password)
-
-    db.session.add(user)
+    new_user = User(name=name, email=email, role=role, is_active=True)
+    new_user.set_password(password)
+    db.session.add(new_user)
     db.session.commit()
 
-    access_token = create_access_token(identity=str(user.id))
-    user_dict = user.to_dict()
+    access_token = create_access_token(identity=str(new_user.id))
 
     return jsonify({
         "success": True,
-        "message": "User registered successfully",
+        "message": "Registration successful",
         "token": access_token,
-        "user": user_dict,
-        "data": {
-            "token": access_token,
-            "user": user_dict
-        }
+        "user": new_user.to_dict()
     }), 201
-
 
 @auth_bp.route('/me', methods=['GET'])
 @jwt_required()
-def get_me():
+def get_current_user():
     current_user_id = get_jwt_identity()
     user = User.query.get(int(current_user_id))
 
     if not user:
         return jsonify({"success": False, "message": "User not found."}), 404
 
-    user_dict = user.to_dict()
     return jsonify({
         "success": True,
-        "user": user_dict,
-        "data": user_dict
+        "user": user.to_dict()
     }), 200
