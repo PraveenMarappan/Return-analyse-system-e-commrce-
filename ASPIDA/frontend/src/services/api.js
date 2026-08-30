@@ -34,8 +34,8 @@ API.interceptors.response.use(
       message = 'Unable to connect to ASPIDA server. Please make sure the backend is running.';
     } else if (error.response.data && error.response.data.message) {
       message = error.response.data.message;
-    } else if (error.response.status === 500) {
-      message = 'Login service is temporarily unavailable.';
+    } else if (typeof error.response.data === 'string' && error.response.data.trim()) {
+      message = error.response.data;
     } else {
       message = error.message || message;
     }

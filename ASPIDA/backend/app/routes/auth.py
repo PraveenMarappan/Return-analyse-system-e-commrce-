@@ -11,51 +11,58 @@ def health_check_auth():
         "message": "ASPIDA backend is running"
     }), 200
 
+import traceback
+
 @auth_bp.route('/login', methods=['POST'])
 def login():
-    data = request.get_json() or {}
-    email = data.get('email', '')
-    password = data.get('password', '')
+    try:
+        data = request.get_json() or {}
+        email = data.get('email', '')
+        password = data.get('password', '')
 
-    if not isinstance(email, str) or not isinstance(password, str):
-        return jsonify({"success": False, "message": "Please enter your email and password."}), 400
+        if not isinstance(email, str) or not isinstance(password, str):
+            return jsonify({"success": False, "message": "Please enter your email and password."}), 400
 
-    email = email.strip().lower()
+        email = email.strip().lower()
 
-    if not email or not password:
-        return jsonify({"success": False, "message": "Please enter your email and password."}), 400
+        if not email or not password:
+            return jsonify({"success": False, "message": "Please enter your email and password."}), 400
 
-    print(f"[AUTH] Login attempt: {email}")
-    user = User.query.filter_by(email=email).first()
-    print(f"[AUTH] User found: {user is not None}")
+        print(f"[AUTH] Login attempt for: {email}")
+        user = User.query.filter_by(email=email).first()
 
-    if not user:
-        return jsonify({"success": False, "message": "Invalid email or password."}), 401
+        if not user:
+            print(f"[AUTH] User not found: {email}")
+            return jsonify({"success": False, "message": "Invalid email or password."}), 401
 
-    is_password_valid = user.check_password(password)
-    print(f"[AUTH] Password verified: {is_password_valid}")
+        is_password_valid = user.check_password(password)
+        if not is_password_valid:
+            print(f"[AUTH] Invalid password for: {email}")
+            return jsonify({"success": False, "message": "Invalid email or password."}), 401
 
-    if not is_password_valid:
-        return jsonify({"success": False, "message": "Invalid email or password."}), 401
+        if not user.is_active:
+            return jsonify({"success": False, "message": "User account is deactivated."}), 403
 
-    if not user.is_active:
-        print(f"[AUTH] Account deactivated for: {email}")
-        return jsonify({"success": False, "message": "User account is deactivated."}), 403
+        access_token = create_access_token(identity=str(user.id))
 
-    access_token = create_access_token(identity=str(user.id))
-    print(f"[AUTH] JWT generated: True")
-
-    user_dict = user.to_dict()
-    return jsonify({
-        "success": True,
-        "message": "Login successful",
-        "token": access_token,
-        "user": user_dict,
-        "data": {
+        user_dict = user.to_dict()
+        return jsonify({
+            "success": True,
+            "message": "Login successful",
             "token": access_token,
-            "user": user_dict
-        }
-    }), 200
+            "user": user_dict,
+            "data": {
+                "token": access_token,
+                "user": user_dict
+            }
+        }), 200
+    except Exception as err:
+        print("[AUTH ERROR]", str(err))
+        traceback.print_exc()
+        return jsonify({
+            "success": False,
+            "message": f"Login server error: {str(err)}"
+        }), 500
 
 
 @auth_bp.route('/register', methods=['POST'])

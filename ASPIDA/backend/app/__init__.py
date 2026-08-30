@@ -31,11 +31,14 @@ def create_app(config_class=Config):
             "message": "ASPIDA backend is running"
         }), 200
 
-    # Ensure directories exist
-    os.makedirs(os.path.join(app.config['BASE_DIR'] if hasattr(app.config, 'BASE_DIR') else os.path.dirname(app.root_path), 'instance'), exist_ok=True)
-    os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
-    os.makedirs(app.config['REPORT_FOLDER'], exist_ok=True)
-    os.makedirs(app.config['MODEL_FOLDER'], exist_ok=True)
+    # Ensure directories exist safely
+    try:
+        os.makedirs(os.path.join(app.config['BASE_DIR'] if hasattr(app.config, 'BASE_DIR') else os.path.dirname(app.root_path), 'instance'), exist_ok=True)
+        os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+        os.makedirs(app.config['REPORT_FOLDER'], exist_ok=True)
+        os.makedirs(app.config['MODEL_FOLDER'], exist_ok=True)
+    except Exception as err:
+        print(f"[CONFIG] Directory setup note: {err}")
 
     # Register blueprints
     from app.routes.auth import auth_bp
