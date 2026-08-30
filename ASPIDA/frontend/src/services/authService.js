@@ -5,7 +5,7 @@ const DEMO_USERS = {
 };
 
 export const authService = {
-  login: async (email) => {
+  login: (email) => {
     const cleanEmail = (email || '').trim().toLowerCase();
 
     if (!cleanEmail) {
@@ -19,7 +19,7 @@ export const authService = {
 
     const user = DEMO_USERS[cleanEmail];
     if (!user) {
-      return { success: false, message: 'This demo account is not registered. Please use one of the demo emails.' };
+      return { success: false, message: 'This demo account is not registered. Please use a demo email.' };
     }
 
     const demoToken = `demo_token_${user.role}_${Date.now()}`;
@@ -43,7 +43,7 @@ export const authService = {
     }
   },
 
-  fetchMe: async () => {
+  fetchMe: () => {
     const user = authService.getCurrentUser();
     if (user) {
       return { success: true, user };

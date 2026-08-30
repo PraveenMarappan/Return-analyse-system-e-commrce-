@@ -21,21 +21,14 @@ export const AuthProvider = ({ children }) => {
     setLoading(false);
   }, []);
 
-  const login = async (email) => {
-    setLoading(true);
-    try {
-      const res = await authService.login(email);
-      if (res.success && res.user) {
-        setToken(res.token);
-        setUser(res.user);
-        return { success: true, user: res.user, role: res.role };
-      } else {
-        return { success: false, message: res.message || 'Login failed.' };
-      }
-    } catch (err) {
-      return { success: false, message: err.message || 'Failed to authenticate.' };
-    } finally {
-      setLoading(false);
+  const login = (email) => {
+    const res = authService.login(email);
+    if (res.success && res.user) {
+      setToken(res.token);
+      setUser(res.user);
+      return { success: true, user: res.user, role: res.role };
+    } else {
+      return { success: false, message: res.message || 'Login failed.' };
     }
   };
 
