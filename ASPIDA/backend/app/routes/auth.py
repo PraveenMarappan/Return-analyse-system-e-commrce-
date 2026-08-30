@@ -1,8 +1,50 @@
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
 from app.models import User, db
+from sqlalchemy import inspect
+import traceback
 
 auth_bp = Blueprint('auth', __name__)
+
+def ensure_db_ready():
+    try:
+        engine = db.engine
+        inspector = inspect(engine)
+        existing_tables = inspector.get_table_names()
+        print(f"[DB DIAG] Engine URI: {engine.url}")
+        print(f"[DB DIAG] Existing tables: {existing_tables}")
+
+        if 'users' not in existing_tables:
+            print("[DB DIAG] Table 'users' missing. Running db.create_all()...")
+            db.create_all()
+            existing_tables = inspect(db.engine).get_table_names()
+            print(f"[DB DIAG] Post create_all tables: {existing_tables}")
+
+        admin_user = User.query.filter_by(email='admin@aspida.com').first()
+        if not admin_user:
+            print("[DB DIAG] Seed users missing. Creating demo users...")
+            admin = User(name='ASPIDA Admin', email='admin@aspida.com', role='admin', is_active=True)
+            admin.set_password('admin123')
+            manager = User(name='Returns Manager', email='manager@aspida.com', role='manager', is_active=True)
+            manager.set_password('manager123')
+            analyst = User(name='Data Analyst', email='analyst@aspida.com', role='analyst', is_active=True)
+            analyst.set_password('analyst123')
+            db.session.add_all([admin, manager, analyst])
+            db.session.commit()
+            print("[DB DIAG] Demo users created successfully.")
+            admin_user = User.query.filter_by(email='admin@aspida.com').first()
+
+        print(f"[DB DIAG] USER TABLE EXISTS: {'YES' if 'users' in existing_tables else 'NO'}")
+        print(f"[DB DIAG] ADMIN USER EXISTS: {'YES' if admin_user is not None else 'NO'}")
+        return True
+    except Exception as e:
+        print(f"[DB DIAG ERROR] Database setup error: {str(e)}")
+        traceback.print_exc()
+        try:
+            db.session.rollback()
+        except Exception:
+            pass
+        return False
 
 @auth_bp.route('/health', methods=['GET'])
 def health_check_auth():
@@ -11,11 +53,14 @@ def health_check_auth():
         "message": "ASPIDA backend is running"
     }), 200
 
-import traceback
-
 @auth_bp.route('/login', methods=['POST'])
 def login():
     try:
+        # Ensure database schema and demo users are ready before executing query
+        db_ok = ensure_db_ready()
+        if not db_ok:
+            print("[AUTH ERROR] Database failed to initialize")
+
         data = request.get_json() or {}
         email = data.get('email', '')
         password = data.get('password', '')
@@ -61,7 +106,7 @@ def login():
         traceback.print_exc()
         return jsonify({
             "success": False,
-            "message": f"Login server error: {str(err)}"
+            "message": f"Login server error [{type(err).__name__}]: {str(err)}"
         }), 500
 
 
