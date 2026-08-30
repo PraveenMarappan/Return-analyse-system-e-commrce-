@@ -1,12 +1,10 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Shield, Eye, EyeOff, Lock, Mail, ArrowRight } from 'lucide-react';
+import { Shield, Mail, ArrowRight } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 const Login = () => {
   const [email, setEmail] = useState('admin@aspida.com');
-  const [password, setPassword] = useState('admin123');
-  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   
@@ -16,10 +14,16 @@ const Login = () => {
   const handleLogin = async (e) => {
     e.preventDefault();
     
-    const cleanEmail = email.trim().toLowerCase();
+    const cleanEmail = (email || '').trim().toLowerCase();
     
-    if (!cleanEmail || !password) {
-      setError('Please enter your email and password.');
+    if (!cleanEmail) {
+      setError('Please enter your email address.');
+      return;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(cleanEmail)) {
+      setError('Please enter a valid email address.');
       return;
     }
 
@@ -27,22 +31,29 @@ const Login = () => {
     setError('');
 
     try {
-      const res = await login(cleanEmail, password);
+      const res = await login(cleanEmail);
       if (res.success) {
-        navigate('/dashboard');
+        if (res.role === 'admin') {
+          navigate('/admin');
+        } else if (res.role === 'manager') {
+          navigate('/manager');
+        } else if (res.role === 'analyst') {
+          navigate('/analyst');
+        } else {
+          navigate('/dashboard');
+        }
       } else {
-        setError(res.message || 'Invalid email or password.');
+        setError(res.message || 'This demo account is not registered. Please use one of the demo emails.');
       }
     } catch (err) {
-      setError(err.message || 'Unable to connect to ASPIDA server. Please make sure the backend is running.');
+      setError(err.message || 'An error occurred. Please use one of the demo emails.');
     } finally {
       setLoading(false);
     }
   };
 
-  const fillDemoCredentials = (demoEmail, demoPassword) => {
+  const fillDemoCredentials = (demoEmail) => {
     setEmail(demoEmail);
-    setPassword(demoPassword);
     setError('');
   };
 
@@ -102,7 +113,7 @@ const Login = () => {
 
         {/* Form */}
         <form onSubmit={handleLogin}>
-          <div className="form-group" style={{ marginBottom: '16px' }}>
+          <div className="form-group" style={{ marginBottom: '20px' }}>
             <label className="form-label" style={{ display: 'block', marginBottom: '6px', fontSize: '0.85rem', fontWeight: 600, color: '#334155' }}>Email Address</label>
             <div style={{ position: 'relative' }}>
               <input
@@ -116,51 +127,11 @@ const Login = () => {
                   fontSize: '0.9rem',
                   outline: 'none'
                 }}
-                placeholder="name@company.com"
+                placeholder="admin@aspida.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                required
               />
               <Mail size={18} color="#94a3b8" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
-            </div>
-          </div>
-
-          <div className="form-group" style={{ marginBottom: '20px' }}>
-            <label className="form-label" style={{ display: 'block', marginBottom: '6px', fontSize: '0.85rem', fontWeight: 600, color: '#334155' }}>Password</label>
-            <div style={{ position: 'relative' }}>
-              <input
-                type={showPassword ? 'text' : 'password'}
-                className="form-input"
-                style={{
-                  width: '100%',
-                  padding: '10px 38px 10px 38px',
-                  borderRadius: '8px',
-                  border: '1px solid #cbd5e1',
-                  fontSize: '0.9rem',
-                  outline: 'none'
-                }}
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
-              <Lock size={18} color="#94a3b8" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                style={{
-                  position: 'absolute',
-                  right: '12px',
-                  top: '50%',
-                  transform: 'translateY(-50%)',
-                  background: 'none',
-                  border: 'none',
-                  cursor: 'pointer',
-                  color: '#94a3b8'
-                }}
-              >
-                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-              </button>
             </div>
           </div>
 
@@ -185,7 +156,7 @@ const Login = () => {
               opacity: loading ? 0.7 : 1
             }}
           >
-            {loading ? 'Authenticating...' : 'Sign In to Dashboard'}
+            {loading ? 'Signing In...' : 'Sign In to Dashboard'}
             {!loading && <ArrowRight size={18} />}
           </button>
         </form>
@@ -198,7 +169,7 @@ const Login = () => {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
             <button
               type="button"
-              onClick={() => fillDemoCredentials('admin@aspida.com', 'admin123')}
+              onClick={() => fillDemoCredentials('admin@aspida.com')}
               className="btn btn-secondary"
               style={{ fontSize: '0.75rem', padding: '8px 4px', border: '1px solid #cbd5e1', borderRadius: '6px', background: '#f8fafc', cursor: 'pointer', fontWeight: 600, color: '#334155' }}
             >
@@ -206,7 +177,7 @@ const Login = () => {
             </button>
             <button
               type="button"
-              onClick={() => fillDemoCredentials('manager@aspida.com', 'manager123')}
+              onClick={() => fillDemoCredentials('manager@aspida.com')}
               className="btn btn-secondary"
               style={{ fontSize: '0.75rem', padding: '8px 4px', border: '1px solid #cbd5e1', borderRadius: '6px', background: '#f8fafc', cursor: 'pointer', fontWeight: 600, color: '#334155' }}
             >
@@ -214,7 +185,7 @@ const Login = () => {
             </button>
             <button
               type="button"
-              onClick={() => fillDemoCredentials('analyst@aspida.com', 'analyst123')}
+              onClick={() => fillDemoCredentials('analyst@aspida.com')}
               className="btn btn-secondary"
               style={{ fontSize: '0.75rem', padding: '8px 4px', border: '1px solid #cbd5e1', borderRadius: '6px', background: '#f8fafc', cursor: 'pointer', fontWeight: 600, color: '#334155' }}
             >

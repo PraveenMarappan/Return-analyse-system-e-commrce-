@@ -6,50 +6,29 @@ const AuthContext = createContext(null);
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(() => authService.getCurrentUser());
   const [token, setToken] = useState(() => localStorage.getItem('aspida_token'));
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    const initAuth = async () => {
-      const storedToken = localStorage.getItem('aspida_token');
-      if (storedToken) {
-        try {
-          const res = await authService.fetchMe();
-          const userData = res.user || res.data;
-          if (res.success && userData) {
-            setUser(userData);
-            setToken(storedToken);
-          } else {
-            authService.logout();
-            setUser(null);
-            setToken(null);
-          }
-        } catch (err) {
-          console.error('[AUTH] Failed to validate session token:', err);
-          authService.logout();
-          setUser(null);
-          setToken(null);
-        }
-      } else {
-        setUser(null);
-        setToken(null);
-      }
-      setLoading(false);
-    };
-
-    initAuth();
+    const storedUser = authService.getCurrentUser();
+    const storedToken = localStorage.getItem('aspida_token');
+    if (storedUser && storedToken) {
+      setUser(storedUser);
+      setToken(storedToken);
+    } else {
+      setUser(null);
+      setToken(null);
+    }
+    setLoading(false);
   }, []);
 
-  const login = async (email, password) => {
+  const login = async (email) => {
     setLoading(true);
     try {
-      const res = await authService.login(email, password);
-      const authToken = res.token || res.data?.token;
-      const userData = res.user || res.data?.user;
-
-      if (authToken && userData) {
-        setToken(authToken);
-        setUser(userData);
-        return { success: true, user: userData };
+      const res = await authService.login(email);
+      if (res.success && res.user) {
+        setToken(res.token);
+        setUser(res.user);
+        return { success: true, user: res.user, role: res.role };
       } else {
         return { success: false, message: res.message || 'Login failed.' };
       }

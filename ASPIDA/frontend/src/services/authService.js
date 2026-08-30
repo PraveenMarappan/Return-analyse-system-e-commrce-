@@ -1,18 +1,32 @@
-import API from './api';
+const DEMO_USERS = {
+  'admin@aspida.com': { id: 1, name: 'ASPIDA Admin', email: 'admin@aspida.com', role: 'admin', is_active: true },
+  'manager@aspida.com': { id: 2, name: 'Returns Manager', email: 'manager@aspida.com', role: 'manager', is_active: true },
+  'analyst@aspida.com': { id: 3, name: 'Data Analyst', email: 'analyst@aspida.com', role: 'analyst', is_active: true }
+};
 
 export const authService = {
-  login: async (email, password) => {
+  login: async (email) => {
     const cleanEmail = (email || '').trim().toLowerCase();
-    const res = await API.post('/auth/login', { email: cleanEmail, password });
-    
-    const token = res.token || res.data?.token;
-    const user = res.user || res.data?.user;
 
-    if (token && user) {
-      localStorage.setItem('aspida_token', token);
-      localStorage.setItem('aspida_user', JSON.stringify(user));
+    if (!cleanEmail) {
+      return { success: false, message: 'Please enter your email address.' };
     }
-    return { ...res, token, user };
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(cleanEmail)) {
+      return { success: false, message: 'Please enter a valid email address.' };
+    }
+
+    const user = DEMO_USERS[cleanEmail];
+    if (!user) {
+      return { success: false, message: 'This demo account is not registered. Please use one of the demo emails.' };
+    }
+
+    const demoToken = `demo_token_${user.role}_${Date.now()}`;
+    localStorage.setItem('aspida_token', demoToken);
+    localStorage.setItem('aspida_user', JSON.stringify(user));
+
+    return { success: true, token: demoToken, user, role: user.role };
   },
 
   logout: () => {
@@ -30,12 +44,10 @@ export const authService = {
   },
 
   fetchMe: async () => {
-    const res = await API.get('/auth/me');
-    const user = res.user || res.data;
+    const user = authService.getCurrentUser();
     if (user) {
-      localStorage.setItem('aspida_user', JSON.stringify(user));
+      return { success: true, user };
     }
-    return res;
+    return { success: false, message: 'Not authenticated' };
   }
 };
-

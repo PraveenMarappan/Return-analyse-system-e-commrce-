@@ -29,6 +29,9 @@ function App() {
           <Route path="/" element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>
             <Route index element={<Navigate to="/dashboard" replace />} />
             <Route path="dashboard" element={<Dashboard />} />
+            <Route path="admin" element={<Navigate to="/dashboard" replace />} />
+            <Route path="manager" element={<Navigate to="/dashboard" replace />} />
+            <Route path="analyst" element={<Navigate to="/dashboard" replace />} />
             
             {/* Returns & Analyze */}
             <Route path="returns" element={<ReturnsList />} />
