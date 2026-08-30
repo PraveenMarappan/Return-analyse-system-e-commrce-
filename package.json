@@ -1,0 +1,10 @@
+{
+  "name": "aspida-return-analyse-system",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build": "cd ASPIDA/frontend && npm install && npm run build",
+    "dev": "cd ASPIDA/frontend && npm run dev",
+    "preview": "cd ASPIDA/frontend && npm run preview"
+  }
+}

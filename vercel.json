@@ -1,4 +1,7 @@
 {
+  "buildCommand": "cd ASPIDA/frontend && npm install && npm run build",
+  "outputDirectory": "ASPIDA/frontend/dist",
+  "framework": "vite",
   "rewrites": [
     {
       "source": "/api/(.*)",
