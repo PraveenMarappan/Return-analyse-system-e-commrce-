@@ -1,0 +1,15 @@
+# Python / Flask
+__pycache__/
+*.py[cod]
+*$py.class
+instance/
+uploads/
+reports/*.pdf
+.env
+venv/
+env/
+
+# Node / Vite
+node_modules/
+dist/
+.DS_Store
